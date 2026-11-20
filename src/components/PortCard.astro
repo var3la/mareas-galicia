@@ -1,0 +1,270 @@
+---
+import type { Porto } from '../lib/meteogalicia';
+import { tideCurve, tideStatus, smoothPath } from '../lib/tide';
+import { formatDurationMin } from '../lib/time';
+
+interface Props {
+  porto: Porto;
+  dayStart: number; // minutos de reloj del inicio del día mostrado
+  nowMin: number;
+  isToday: boolean;
+}
+
+const { porto, dayStart, nowMin, isToday } = Astro.props;
+
+const W = 640;
+const H = 220;
+const PAD_X = 16;
+const PAD_Y = 28;
+
+const dayExtremos = porto.extremos.filter((e) => e.minutes >= dayStart && e.minutes < dayStart + 1440);
+const status = tideStatus(porto.extremos, nowMin);
+const curve = tideCurve(porto.extremos, dayStart);
+
+const heights = curve.map((p) => p.height);
+const hMin = Math.min(...heights) - 0.2;
+const hMax = Math.max(...heights) + 0.2;
+
+const xOf = (minute: number) => PAD_X + (minute / 1440) * (W - 2 * PAD_X);
+const yOf = (h: number) => PAD_Y + (1 - (h - hMin) / (hMax - hMin)) * (H - 2 * PAD_Y);
+
+const linePts = curve.map((p) => ({ x: xOf(p.minute), y: yOf(p.height) }));
+const linePath = smoothPath(linePts);
+const areaPath = linePath
+  ? `${linePath} L${xOf(1440).toFixed(1)},${H - PAD_Y} L${xOf(0).toFixed(1)},${H - PAD_Y} Z`
+  : '';
+
+const nowX = xOf(nowMin - dayStart);
+const showNow = isToday && nowMin >= dayStart && nowMin <= dayStart + 1440;
+const nowHeight = status.height;
+
+const hourTicks = [0, 6, 12, 18, 24];
+const pad = (n: number) => String(n).padStart(2, '0');
+const trendLabel = status.trend === 'subindo' ? 'Subiendo' : status.trend === 'bajando' ? 'Bajando' : '';
+const tipoLabel = (t: 'pleamar' | 'bajamar') => (t === 'pleamar' ? 'Pleamar' : 'Bajamar');
+---
+
+<article class="port" aria-labelledby={`port-${porto.id}`}>
+  <header class="port__head">
+    <div>
+      <p class="port__eyebrow">Puerto</p>
+      <h2 id={`port-${porto.id}`} class="port__name">{porto.nome}</h2>
+    </div>
+    {isToday && trendLabel && (
+      <span class:list={['trend', status.trend]}>
+        <span class="trend__dot" aria-hidden="true"></span>
+        {trendLabel}
+      </span>
+    )}
+  </header>
+
+  <div class="port__summary">
+    {isToday && nowHeight !== null ? (
+      <div class="metric">
+        <span class="metric__value">{nowHeight.toFixed(2).replace('.', ',')}<small> m</small></span>
+        <span class="metric__label">Altura ahora</span>
+      </div>
+    ) : (
+      <div class="metric">
+        <span class="metric__value metric__value--muted">{dayExtremos.length}</span>
+        <span class="metric__label">Mareas previstas</span>
+      </div>
+    )}
+
+    {isToday && status.next && status.minutesToNext !== null && (
+      <div class="next">
+        <span class="next__label">Próxima {status.next.tipo === 'pleamar' ? 'pleamar' : 'bajamar'}</span>
+        <span class="next__time">{status.next.hora}</span>
+        <span class="next__in">en {formatDurationMin(status.minutesToNext)}</span>
+      </div>
+    )}
+  </div>
+
+  <figure class="chart">
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Curva de marea de ${porto.nome}`} preserveAspectRatio="none">
+      {hourTicks.map((h) => (
+        <line x1={xOf(h * 60)} x2={xOf(h * 60)} y1={PAD_Y} y2={H - PAD_Y} class="grid" />
+      ))}
+      <path d={areaPath} class="area" />
+      <path d={linePath} class="curve" />
+      {dayExtremos.map((e) => (
+        <circle cx={xOf(e.minutes - dayStart)} cy={yOf(e.altura)} r="4.5" class={['dot', e.tipo]} />
+      ))}
+      {showNow && (
+        <g>
+          <line x1={nowX} x2={nowX} y1={PAD_Y - 10} y2={H - PAD_Y} class="now" />
+          {nowHeight !== null && <circle cx={nowX} cy={yOf(nowHeight)} r="6" class="now-dot" />}
+        </g>
+      )}
+    </svg>
+    <figcaption class="axis" aria-hidden="true">
+      {hourTicks.map((h) => (
+        <span>{pad(h)}h</span>
+      ))}
+    </figcaption>
+  </figure>
+
+  {dayExtremos.length > 0 ? (
+    <table class="times">
+      <caption class="sr-only">Horas de marea del día</caption>
+      <thead>
+        <tr><th scope="col">Hora</th><th scope="col">Tipo</th><th scope="col">Altura</th></tr>
+      </thead>
+      <tbody>
+        {dayExtremos.map((e) => (
+          <tr>
+            <td class="num">{e.hora}</td>
+            <td><span class={['tag', e.tipo]}>{tipoLabel(e.tipo)}</span></td>
+            <td class="num">{e.altura.toFixed(1).replace('.', ',')} m</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  ) : (
+    <p class="empty">Sin predicciones para este día.</p>
+  )}
+</article>
+
+<style>
+  .port {
+    display: grid;
+    gap: 1.25rem;
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+  .port__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .port__eyebrow {
+    margin: 0 0 0.2rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .port__name {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+  .trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid currentColor;
+  }
+  .trend.subindo { color: var(--flood); }
+  .trend.baixando { color: var(--ebb); }
+  .trend__dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .trend.subindo .trend__dot { animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+
+  .port__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem 2.5rem;
+    align-items: flex-end;
+  }
+  .metric { display: grid; }
+  .metric__value {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 6vw, 3.4rem);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric__value small { font-size: 0.45em; color: var(--ink-soft); }
+  .metric__value--muted { color: var(--ink-soft); }
+  .metric__label, .next__label, .next__in {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+  .next { display: grid; gap: 0.1rem; }
+  .next__time {
+    font-size: 1.35rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chart { margin: 0; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .grid { stroke: var(--rule); stroke-width: 1; }
+  .area { fill: var(--wave-fill); }
+  .curve {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .dot { stroke: var(--surface); stroke-width: 2; }
+  .dot.pleamar { fill: var(--flood); }
+  .dot.bajamar { fill: var(--ebb); }
+  .now { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 3 4; }
+  .now-dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+  .axis {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.4rem 0 0;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .times {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  .times th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .times td {
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .times td:last-child, .times th:last-child { text-align: right; }
+  .num { font-variant-numeric: tabular-nums; }
+  .tag {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .tag.pleamar { color: var(--flood); }
+  .tag.bajamar { color: var(--ebb); }
+  .empty { margin: 0; color: var(--ink-soft); }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>
