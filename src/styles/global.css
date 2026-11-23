@@ -1,75 +1,91 @@
+@import 'tailwindcss';
+
+/* Tema neobrutalism: adaptado de ekmas/neobrutalism-components (MIT, © 2023 Samuel Breznjak). */
+
 :root {
-  /* Brutalist Framework 2.4: blanco y negro, acentos puros, sombras duras. */
-  --paper: #ffffff;
-  --surface: #ffffff;
-  --ink: #000000;
-  --ink-soft: #2e2e2e;
-  --rule: #000000;
-  --rule-strong: #000000;
-  --sea: #000000;
+  --border-radius: 5px;
+  --box-shadow-x: 4px;
+  --box-shadow-y: 4px;
+  --reverse-box-shadow-x: -4px;
+  --reverse-box-shadow-y: -4px;
+
+  --heading-font-weight: 700;
+  --base-font-weight: 500;
+  --base-font-family: arial, helvetica, sans-serif;
+  --heading-font-family: 'Arial Black', Gadget, sans-serif;
+
+  --background: hsl(214, 95%, 93%);
+  --secondary-background: oklch(100% 0 0);
+  --foreground: oklch(0% 0 0);
+  --main-foreground: oklch(0% 0 0);
+  --main: hsl(217, 100%, 66%);
+  --border: oklch(0% 0 0);
+  --ring: oklch(0% 0 0);
+  --shadow: var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border);
+}
+
+@theme inline {
+  --color-main: var(--main);
+  --color-background: var(--background);
+  --color-secondary-background: var(--secondary-background);
+  --color-foreground: var(--foreground);
+  --color-main-foreground: var(--main-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --spacing-boxShadowX: var(--box-shadow-x);
+  --spacing-boxShadowY: var(--box-shadow-y);
+  --spacing-reverseBoxShadowX: var(--reverse-box-shadow-x);
+  --spacing-reverseBoxShadowY: var(--reverse-box-shadow-y);
+
+  --radius-base: var(--border-radius);
+  --shadow-shadow: var(--shadow);
+
+  --font-weight-base: var(--base-font-weight);
+  --font-weight-heading: var(--heading-font-weight);
+  --font-base: var(--base-font-family);
+  --font-heading: var(--heading-font-family);
+}
+
+/* Tokens locales de las páginas (nombres anteriores, mismos valores del tema). */
+:root {
+  --paper: var(--background);
+  --surface: var(--secondary-background);
+  --ink: var(--foreground);
+  --ink-soft: oklch(25% 0 0);
+  --rule: var(--border);
+  --rule-strong: var(--border);
+  --sea: var(--main);
   --flood: #007a33;
   --ebb: #e10600;
-  --accent: #ffe600;
-  --wave-fill: #f2f2f2;
-  --shadow: 5px 5px 0 #000000;
-  --font-body: arial, helvetica, sans-serif;
-  --font-display: 'Arial Black', Gadget, sans-serif;
+  --accent: #facc00;
+  --wave-fill: hsl(217, 100%, 66%, 0.15);
+  --font-body: var(--base-font-family);
+  --font-display: var(--heading-font-family);
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+@layer base {
+  body {
+    @apply text-foreground font-base relative;
+    font-family: var(--base-font-family);
+    background-color: var(--paper);
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
 
-html {
-  -webkit-text-size-adjust: 100%;
-  font-size: 14px;
-}
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
 
-@media (min-width: 992px) { html { font-size: 14.5px; } }
-@media (min-width: 1200px) { html { font-size: 15px; } }
+  a:hover {
+    text-decoration: underline;
+  }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  font-weight: 400;
-}
-
-img,
-svg {
-  display: block;
-  max-width: 100%;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-button,
-input,
-select,
-textarea {
-  color: inherit;
-  font: inherit;
-  margin: 0;
-}
-
-:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
-  background: var(--accent);
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
 .wrap {

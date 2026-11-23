@@ -2,6 +2,8 @@
 import Base from '../layouts/Base.astro';
 import Tabs from '../components/Tabs.astro';
 import { getCams } from '../lib/cams';
+import { cn } from '../lib/utils';
+import { alertVariants } from '../components/ui/alert';
 
 let error: string | null = null;
 let cams: Awaited<ReturnType<typeof getCams>> = [];
@@ -29,7 +31,7 @@ const initialId = cams[0]?.id ?? null;
     </header>
 
     {error && (
-      <div class="notice" role="alert">
+      <div class={cn("notice", alertVariants())} role="alert">
         <strong>No se pudo consultar MeteoGalicia.</strong>
         <span>{error}. Inténtalo de novo en uns minutos.</span>
       </div>
@@ -65,7 +67,7 @@ const initialId = cams[0]?.id ?? null;
       </main>
     )}
 
-    {!error && cams.length === 0 && <div class="notice">Non hai cámaras dispoñibles neste momento.</div>}
+    {!error && cams.length === 0 && <div class={cn("notice", alertVariants())}>Non hai cámaras dispoñibles neste momento.</div>}
 
     <footer class="foot">
       <p>

@@ -7,6 +7,10 @@ import { getMareas, windowAround } from '../lib/meteogalicia';
 import { addDays, formatDayLong, isoToMinutes, nowMinutes } from '../lib/time';
 import { tideStatus } from '../lib/tide';
 import { href } from '../lib/paths';
+import { cn } from '../lib/utils';
+import { buttonVariants } from './ui/button';
+import { badgeVariants } from './ui/badge';
+import { alertVariants } from './ui/alert';
 
 interface Props {
   zone: Zone;
@@ -75,19 +79,19 @@ const generatedAt = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: 
 
     <section class="toolbar" aria-label="Día consultado">
       <div class="day">
-        <a class="day__btn" href={dayHref(prevDay)} aria-label="Día anterior">←</a>
+        <a class={cn("day__btn", buttonVariants({ variant: "neutral", size: "icon" }))} href={dayHref(prevDay)} aria-label="Día anterior">←</a>
         <div class="day__current">
           <span class="day__label">{dayTitle}</span>
           {!isToday && <a class="day__today" href={zoneHref(zone.slug, today)}>Volver a hoy</a>}
         </div>
-        <a class="day__btn" href={dayHref(nextDay)} aria-label="Día siguiente">→</a>
+        <a class={cn("day__btn", buttonVariants({ variant: "neutral", size: "icon" }))} href={dayHref(nextDay)} aria-label="Día siguiente">→</a>
       </div>
 
       <p class="status-line" aria-live="polite">
         {isToday && statuses.length > 0 ? (
           <>
-            <span class="pill pill--flood">{rising} subiendo</span>
-            <span class="pill pill--ebb">{falling} bajando</span>
+            <span class={cn("pill pill--flood", badgeVariants({ variant: "neutral" }))}>{rising} subiendo</span>
+            <span class={cn("pill pill--ebb", badgeVariants({ variant: "neutral" }))}>{falling} bajando</span>
             <span class="muted">· {zone.name}</span>
           </>
         ) : (
@@ -98,14 +102,14 @@ const generatedAt = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: 
 
     <main>
       {error && (
-        <div class="notice" role="alert">
+        <div class={cn("notice", alertVariants())} role="alert">
           <strong>No se pudo consultar MeteoGalicia.</strong>
           <span>{error}. Inténtalo de nuevo en unos minutos.</span>
         </div>
       )}
 
       {!error && zonePorts.length === 0 && (
-        <div class="notice">No hay datos de marea para esta zona este día.</div>
+        <div class={cn("notice", alertVariants())}>No hay datos de marea para esta zona este día.</div>
       )}
 
       <div class="grid">

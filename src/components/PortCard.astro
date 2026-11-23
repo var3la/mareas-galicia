@@ -2,6 +2,8 @@
 import type { Porto } from '../lib/meteogalicia';
 import { tideCurve, tideStatus, smoothPath } from '../lib/tide';
 import { formatDurationMin } from '../lib/time';
+import { cn } from '../lib/utils';
+import { cardVariants } from './ui/card';
 
 interface Props {
   porto: Porto;
@@ -44,7 +46,7 @@ const trendLabel = status.trend === 'subindo' ? 'Subiendo' : status.trend === 'b
 const tipoLabel = (t: 'pleamar' | 'bajamar') => (t === 'pleamar' ? 'Pleamar' : 'Bajamar');
 ---
 
-<article class="port" aria-labelledby={`port-${porto.id}`}>
+<article class={cn("port", cardVariants())} aria-labelledby={`port-${porto.id}`}>
   <header class="port__head">
     <div>
       <p class="port__eyebrow">Puerto</p>
