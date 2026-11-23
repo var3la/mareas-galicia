@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortCard from '../components/PortCard.astro';
+import Tabs from '../components/Tabs.astro';
 import { zones, getZone } from '../lib/zones';
 import { getMareas, windowAround } from '../lib/meteogalicia';
 import { addDays, formatDayLong, isValidIso, isoToMinutes, nowMinutes, todayIso } from '../lib/time';
@@ -42,6 +43,8 @@ const generatedAt = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: 
   description="Estado das mareas en cada zona da costa galega, con datos da predición oficial de MeteoGalicia."
 >
   <div class="wrap">
+    <Tabs active="mareas" />
+
     <header class="masthead">
       <p class="kicker">Costa gallega · Predicción de mareas</p>
       <h1 class="headline">Mareas</h1>

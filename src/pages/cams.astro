@@ -1,0 +1,253 @@
+---
+import Base from '../layouts/Base.astro';
+import Tabs from '../components/Tabs.astro';
+import { getCams } from '../lib/cams';
+
+let error: string | null = null;
+let cams: Awaited<ReturnType<typeof getCams>> = [];
+try {
+  cams = await getCams();
+} catch (e) {
+  error = e instanceof Error ? e.message : 'Erro descoñecido';
+}
+const initialId = cams[0]?.id ?? null;
+---
+
+<Base
+  title="Mareas · Cams"
+  description="Cámaras de observación da costa galega, con datos da rede de cámaras de MeteoGalicia."
+>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="" />
+
+  <div class="wrap">
+    <Tabs active="cams" />
+
+    <header class="masthead">
+      <p class="kicker">Galicia · Observación</p>
+      <h1 class="headline">Cams</h1>
+      <p class="deck">Elixe unha cámara no mapa ou na lista para ver a súa última imaxe.</p>
+    </header>
+
+    {error && (
+      <div class="notice" role="alert">
+        <strong>No se pudo consultar MeteoGalicia.</strong>
+        <span>{error}. Inténtalo de novo en uns minutos.</span>
+      </div>
+    )}
+
+    {!error && cams.length > 0 && (
+      <main class="layout" data-cams={JSON.stringify(cams)} data-initial={initialId}>
+        <section class="map-col" aria-label="Mapa de cámaras">
+          <div id="cams-map" class="map" role="region" aria-label="Mapa interactivo de cámaras"></div>
+          <ul class="list" aria-label="Lista de cámaras">
+            {cams.map((c) => (
+              <li>
+                <button type="button" class="list__item" data-id={c.id} aria-pressed="false">
+                  <span class="list__name">{c.nome}</span>
+                  <span class="list__where">{c.concello} · {c.provincia}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <aside class="viewer" aria-live="polite">
+          <div class="viewer__frame">
+            <img id="cam-img" class="viewer__img" alt="" />
+          </div>
+          <div class="viewer__info">
+            <h2 id="cam-name" class="viewer__title"></h2>
+            <p id="cam-where" class="muted"></p>
+            <p id="cam-date" class="muted"></p>
+            <p><a id="cam-link" class="link" href="https://www.meteogalicia.gal/web/observacion/camaras" target="_blank" rel="noopener">Ver na web de MeteoGalicia →</a></p>
+          </div>
+        </aside>
+      </main>
+    )}
+
+    {!error && cams.length === 0 && <div class="notice">Non hai cámaras dispoñibles neste momento.</div>}
+
+    <footer class="foot">
+      <p>
+        Datos: <a href="https://www.meteogalicia.gal/web/observacion/camaras" target="_blank" rel="noopener">MeteoGalicia</a>.
+        As cámaras son de observación en directo; non substitúen o aviso oficial.
+      </p>
+    </footer>
+  </div>
+</Base>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="" is:inline></script>
+<script>
+  type Cam = { id: number; nome: string; concello: string; provincia: string; lat: number; lon: number; imaxe: string; dataUltimaAct: string };
+
+  const root = document.querySelector<HTMLElement>('.layout');
+  const mapEl = document.getElementById('cams-map');
+  if (root && mapEl && typeof L !== 'undefined') {
+    const cams: Cam[] = JSON.parse(root.dataset.cams ?? '[]');
+    const byId = new Map(cams.map((c) => [c.id, c]));
+    const img = document.getElementById('cam-img') as HTMLImageElement;
+    const name = document.getElementById('cam-name')!;
+    const where = document.getElementById('cam-where')!;
+    const date = document.getElementById('cam-date')!;
+    const link = document.getElementById('cam-link') as HTMLAnchorElement;
+    const listButtons = [...document.querySelectorAll<HTMLButtonElement>('.list__item')];
+    const markers = new Map<number, L.CircleMarker>();
+
+    const map = L.map(mapEl, { scrollWheelZoom: false }).setView([42.8, -8.1], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    function show(id: number) {
+      const c = byId.get(id);
+      if (!c) return;
+      // Parámetro de caché para ver la imagen más reciente al seleccionarla.
+      img.src = `${c.imaxe}?t=${Date.now()}`;
+      img.alt = `Última imaxe da cámara ${c.nome}`;
+      name.textContent = c.nome;
+      where.textContent = `${c.concello} · ${c.provincia}`;
+      date.textContent = `Actualizada: ${c.dataUltimaAct.replace('T', ' ')}`;
+      listButtons.forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.id) === id)));
+      markers.forEach((m, mid) => m.setStyle({ color: '#0d4a52', fillColor: mid === id ? '#c8862a' : '#0d4a52', radius: mid === id ? 9 : 6 }));
+      const m = markers.get(id);
+      if (m) map.panTo(m.getLatLng());
+      if (root.dataset.current !== String(id)) root.dataset.current = String(id);
+    }
+
+    for (const c of cams) {
+      const m = L.circleMarker([c.lat, c.lon], { radius: 6, color: '#0d4a52', fillColor: '#0d4a52', fillOpacity: 0.9, weight: 2 })
+        .addTo(map)
+        .bindTooltip(c.nome);
+      m.on('click', () => show(c.id));
+      markers.set(c.id, m);
+    }
+
+    listButtons.forEach((b) => b.addEventListener('click', () => show(Number(b.dataset.id))));
+
+    const initial = Number(root.dataset.initial);
+    if (byId.has(initial)) show(initial);
+    if (cams.length > 1) {
+      const bounds = L.latLngBounds(cams.map((c) => [c.lat, c.lon] as [number, number]));
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }
+</script>
+
+<style>
+  .masthead {
+    padding: clamp(1.5rem, 4vw, 2.5rem) 0 clamp(1.25rem, 3vw, 2rem);
+    display: grid;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .kicker {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .headline {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(3rem, 10vw, 6rem);
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+  }
+  .deck { margin: 0.3rem 0 0; color: var(--ink-soft); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem 0 2rem;
+    align-items: start;
+  }
+  .map {
+    height: clamp(320px, 60vh, 560px);
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .list {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.4rem;
+    max-height: 260px;
+    overflow: auto;
+  }
+  .list__item {
+    width: 100%;
+    display: grid;
+    gap: 0.1rem;
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    cursor: pointer;
+  }
+  .list__item[aria-pressed='true'] { border-color: var(--sea); box-shadow: inset 3px 0 0 var(--sea); }
+  .list__item:hover { border-color: var(--rule-strong); }
+  .list__name { font-weight: 600; }
+  .list__where { font-size: 0.8rem; color: var(--ink-soft); }
+
+  .viewer {
+    position: sticky;
+    top: 1rem;
+    display: grid;
+    gap: 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 0.9rem;
+  }
+  .viewer__frame {
+    aspect-ratio: 4 / 3;
+    background: var(--rule);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .viewer__img { width: 100%; height: 100%; object-fit: cover; }
+  .viewer__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.5rem;
+    line-height: 1.15;
+  }
+  .viewer__info { display: grid; gap: 0.2rem; }
+  .muted { margin: 0; color: var(--ink-soft); font-size: 0.9rem; }
+  .link { color: var(--sea); font-weight: 600; }
+
+  .notice {
+    display: grid;
+    gap: 0.25rem;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    border-left: 3px solid var(--ebb);
+    background: var(--surface);
+  }
+
+  .foot {
+    padding: 1.5rem 0 3rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  .foot a { color: var(--sea); }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    .viewer { position: static; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>

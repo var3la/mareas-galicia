@@ -1,0 +1,46 @@
+---
+interface Props {
+  active: 'mareas' | 'cams';
+}
+const { active } = Astro.props;
+const tabs = [
+  { id: 'mareas', label: 'Mareas', href: '/' },
+  { id: 'cams', label: 'Cams', href: '/cams' },
+] as const;
+---
+
+<nav class="tabs" aria-label="Seccións">
+  {tabs.map((t) => (
+    <a href={t.href} class:list={['tab', { 'tab--active': t.id === active }]} aria-current={t.id === active ? 'page' : undefined}>
+      {t.label}
+    </a>
+  ))}
+</nav>
+
+<style>
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    padding-top: 1.25rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .tab {
+    position: relative;
+    padding: 0.6rem 1rem;
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--ink-soft);
+    transition: color 0.2s ease;
+  }
+  .tab:hover { color: var(--sea); }
+  .tab--active { color: var(--ink); }
+  .tab--active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 3px;
+    background: var(--sea);
+  }
+</style>
