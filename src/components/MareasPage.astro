@@ -220,14 +220,15 @@ const generatedAt = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: 
     place-items: center;
     width: 2.6rem;
     height: 2.6rem;
-    border: 1px solid var(--rule-strong);
-    border-radius: 50%;
+    border: 2px solid var(--ink);
+    border-radius: 0;
+    box-shadow: var(--shadow);
     text-decoration: none;
     font-size: 1.1rem;
     background: var(--surface);
     transition: background 0.2s ease, color 0.2s ease;
   }
-  .day__btn:hover { background: var(--sea); color: var(--surface); border-color: var(--sea); }
+  .day__btn:hover { background: var(--accent); color: var(--ink); }
   .day__current { display: grid; gap: 0.1rem; min-width: 12rem; }
   .day__label {
     font-family: var(--font-display);
@@ -248,10 +249,10 @@ const generatedAt = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: 
   }
   .pill {
     padding: 0.25rem 0.7rem;
-    border-radius: 999px;
+    border-radius: 0;
     font-size: 0.85rem;
     font-weight: 600;
-    border: 1px solid currentColor;
+    border: 2px solid currentColor;
   }
   .pill--flood { color: var(--flood); }
   .pill--ebb { color: var(--ebb); }
@@ -269,7 +270,7 @@ const generatedAt = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: 
     gap: 0.25rem;
     padding: 1rem 1.25rem;
     margin-bottom: 1.5rem;
-    border-left: 3px solid var(--ebb);
+    border-left: 8px solid var(--ebb);
     background: var(--surface);
   }
 

@@ -131,8 +131,9 @@ const tipoLabel = (t: 'pleamar' | 'bajamar') => (t === 'pleamar' ? 'Pleamar' : '
     gap: 1.25rem;
     padding: clamp(1.25rem, 3vw, 1.75rem);
     background: var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: 4px;
+    border: 2px solid var(--ink);
+    border-radius: 0;
+    box-shadow: var(--shadow);
   }
   .port__head {
     display: flex;
@@ -160,7 +161,7 @@ const tipoLabel = (t: 'pleamar' | 'bajamar') => (t === 'pleamar' ? 'Pleamar' : '
     align-items: center;
     gap: 0.45rem;
     padding: 0.35rem 0.7rem;
-    border-radius: 999px;
+    border-radius: 0;
     font-size: 0.85rem;
     font-weight: 600;
     white-space: nowrap;
@@ -171,7 +172,7 @@ const tipoLabel = (t: 'pleamar' | 'bajamar') => (t === 'pleamar' ? 'Pleamar' : '
   .trend__dot {
     width: 0.55rem;
     height: 0.55rem;
-    border-radius: 50%;
+    border-radius: 0;
     background: currentColor;
   }
   .trend.subindo .trend__dot { animation: pulse 2.4s ease-in-out infinite; }
