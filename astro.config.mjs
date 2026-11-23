@@ -1,10 +1,9 @@
 import { defineConfig } from 'astro/config';
-import node from '@astrojs/node';
 
-// SSR: los datos de MeteoGalicia se piden en el servidor (evita CORS y
-// permite cachear la respuesta entre visitantes).
+// Sitio estático para GitHub Pages (https://var3la.github.io/mareas-galicia/).
+// BASE_PATH se define en el workflow de despliegue; en local queda en "/".
 export default defineConfig({
-  output: 'server',
-  adapter: node({ mode: 'standalone' }),
-  server: { host: true, port: 4321 },
+  output: 'static',
+  site: 'https://var3la.github.io',
+  base: process.env.BASE_PATH || '/',
 });

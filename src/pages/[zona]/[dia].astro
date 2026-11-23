@@ -1,0 +1,24 @@
+---
+import MareasPage from '../../components/MareasPage.astro';
+import { zones } from '../../lib/zones';
+import { getMareas, windowAround } from '../../lib/meteogalicia';
+import { addDays, todayIso } from '../../lib/time';
+
+// Días publicados: desde ayer hasta dentro de 6 días.
+export async function getStaticPaths() {
+  const today = todayIso();
+  const days = Array.from({ length: 8 }, (_, i) => addDays(today, i - 1));
+
+  // Si MeteoGalicia no responde, el build falla: así no se publica una página vacía
+  // y se conserva la última versión desplegada.
+  await getMareas(windowAround(days[0]).from, windowAround(days[days.length - 1]).to);
+
+  return zones.flatMap((zone) =>
+    days.map((day) => ({ params: { zona: zone.slug, dia: day }, props: { zone, day, today } })),
+  );
+}
+
+const { zone, day, today } = Astro.props;
+---
+
+<MareasPage zone={zone} day={day} today={today} />

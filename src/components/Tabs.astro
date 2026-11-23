@@ -2,10 +2,12 @@
 interface Props {
   active: 'mareas' | 'cams';
 }
+import { href } from '../lib/paths';
+
 const { active } = Astro.props;
 const tabs = [
-  { id: 'mareas', label: 'Mareas', href: '/' },
-  { id: 'cams', label: 'Cams', href: '/cams' },
+  { id: 'mareas', label: 'Mareas', href: href() },
+  { id: 'cams', label: 'Cams', href: href('cams/') },
 ] as const;
 ---
 
